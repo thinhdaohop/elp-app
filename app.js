@@ -119,11 +119,11 @@
     var x = S.d.tran, vi = S.d.vi, me = S.d.me;
     if (!x) { el.innerHTML = '<div class="card empty">Chưa có lịch thi đấu. Vote mở lúc 10h sáng thứ 3 hằng tuần.</div>'; return; }
     var t = x.tran, toi = x.toi || {}, lech = Date.now() - x.gioServer, now = function () { return Date.now() - lech; };
-    var myTeam = me.Team || "";
+    var myTeam = me.Team || "", TEAMS = S.d.cauHinh.teams || ["Team 1", "Team 2"];
     var st = t.trangThai === "Hủy" ? "Trận này đã hủy" : t.trangThai === "Đã chốt" ? "Đã chốt điểm danh" :
       t.trangThai === "Khóa" || now() > t.khoaMs ? "Đã khóa vote" : "Khóa vote sau <b id='cd'>" + demNguoc(t.khoaMs - now()) + "</b> (21h thứ 6)";
     var h = '<div class="hero"><div class="lbl" style="color:#C5A059">' + (t.homNay ? "HÔM NAY" : "TRẬN SẮP TỚI") + '</div><div class="when">' + esc(t.ngayVN) + " · " + esc(t.bongLan.replace(":", "h")) + '</div><div class="where">📍 ' + esc(t.san) + " · check-in trước " + esc(t.hanCheckin.slice(0, 5).replace(":", "h")) + "</div>" +
-      '<div class="kits"><div class="kit' + (myTeam === "Team 1" ? " me" : "") + '"><b>Team 1</b> · áo ' + esc(t.ao1 || "chưa chốt") + '</div><div class="kit' + (myTeam === "Team 2" ? " me" : "") + '"><b>Team 2</b> · áo ' + esc(t.ao2 || "chưa chốt") + "</div></div>" +
+      '<div class="kits">' + TEAMS.map(function (tm, i) { return '<div class="kit' + (myTeam === tm ? " me" : "") + '"><b>' + esc(tm) + "</b> · áo " + esc((i ? t.ao2 : t.ao1) || "chưa chốt") + "</div>"; }).join("") + "</div>" +
       '<div class="st">' + st + "</div></div>";
     var hc = toi.hanChe;
     if (hc) h += '<div class="banner ' + (hc.muc === "CAM" ? "bad" : "warn") + '"><b>' + (hc.muc === "CAM" ? "⛔ Bạn đang bị cấm thi đấu" : "⚠️ Bạn chỉ được vào sân từ phút 46") + "</b>" + esc(hc.lyDo) + (hc.nhan && hc.muc !== "CAM" && hc.nhan !== "Phút 46" ? " · " + esc(hc.nhan.replace("Phút 46 · ", "")) : "") +
@@ -147,8 +147,8 @@
     }
 
     // danh sách
-    var ds = x.ds, teams = ["Team 1", "Team 2"], coTeam = ds.some(function (r) { return r.team; });
-    if (!S.team) S.team = myTeam || (coTeam ? "Team 1" : "Tất cả");
+    var ds = x.ds, teams = TEAMS, coTeam = ds.some(function (r) { return r.team; });
+    if (!S.team) S.team = myTeam || (coTeam ? TEAMS[0] : "Tất cả");
     var nhom = coTeam ? teams.concat(ds.some(function (r) { return !r.team; }) ? ["Chưa xếp"] : []) : ["Tất cả"];
     if (nhom.indexOf(S.team) === -1) S.team = nhom[0];
     var loc = ds.filter(function (r) { return S.team === "Tất cả" || (S.team === "Chưa xếp" ? !r.team : r.team === S.team); });
@@ -301,7 +301,7 @@
     var selLoi = document.getElementById("maLoi"), selDt = document.getElementById("doiTuong");
     function veDt() {
       var team = selLoi.selectedOptions[0] && selLoi.selectedOptions[0].dataset.team === "1";
-      selDt.innerHTML = team ? '<option>Team 1</option><option>Team 2</option>' : '<option value="">— Chọn thành viên —</option>' + tv.map(function (r) { return '<option value="' + esc(r.ten) + '">' + esc(r.nick) + (r.team ? " · " + esc(r.team) : "") + "</option>"; }).join("");
+      selDt.innerHTML = team ? S.d.cauHinh.teams.map(function (tm) { return "<option>" + esc(tm) + "</option>"; }).join("") : '<option value="">— Chọn thành viên —</option>' + tv.map(function (r) { return '<option value="' + esc(r.ten) + '">' + esc(r.nick) + (r.team ? " · " + esc(r.team) : "") + "</option>"; }).join("");
     }
     selLoi.onchange = veDt; veDt();
     var anhB64 = "";
@@ -328,7 +328,7 @@
   }
   function adminTran(t) {
     return '<div class="card"><h2>Quản lý trận · ' + esc(t.ngayVN) + '<span class="r">' + esc(t.trangThai) + '</span></h2><div class="grid2">' +
-      '<div class="field"><label>Áo Team 1</label><input type="text" id="ao1" value="' + esc(t.ao1) + '" placeholder="Trắng"></div><div class="field"><label>Áo Team 2</label><input type="text" id="ao2" value="' + esc(t.ao2) + '" placeholder="Xanh"></div></div>' +
+      '<div class="field"><label>Áo ' + esc(S.d.cauHinh.teams[0]) + '</label><input type="text" id="ao1" value="' + esc(t.ao1) + '" placeholder="Trắng"></div><div class="field"><label>Áo ' + esc(S.d.cauHinh.teams[1]) + '</label><input type="text" id="ao2" value="' + esc(t.ao2) + '" placeholder="Xanh"></div></div>' +
       '<label class="row muted" style="margin-top:8px"><input type="checkbox" id="macDinh"> Dùng làm màu áo mặc định cho các tuần sau</label>' +
       '<button class="btn" id="luuTran">Lưu màu áo</button>' +
       (t.trangThai === "Hủy" ? '<button class="btn ghost" id="moLai">Mở lại trận</button>' : t.trangThai !== "Đã chốt" ? '<button class="btn ghost" id="huyTran">Hủy trận (nghỉ tuần này)</button><button class="btn gold" id="chot">Chốt trận ngay (ghi lỗi vào SAO ĐỎ)</button>' : "") + "</div>";
@@ -369,7 +369,7 @@
     function sel(k, opts, val) { return '<div class="field"><label>' + k + '</label><select data-f="' + k + '">' + opts.map(function (x) { return "<option" + (x === val ? " selected" : "") + ">" + x + "</option>"; }).join("") + "</select></div>"; }
     box.innerHTML = inp("Vai trò", "text", "Thành viên / Sao đỏ / Đội trưởng…") +
       '<div class="muted" style="font-size:12.5px">Nhiều vai trò cách nhau dấu phẩy. Có: ' + esc(S.d.cauHinh.vaiTro.join(", ")) + "</div>" +
-      '<div class="grid2">' + sel("Team", ["", "Team 1", "Team 2"], m.Team) + sel("Trạng thái", ["Active", "Inactive", "Left"], m.trangThai) + "</div>" +
+      '<div class="grid2">' + sel("Team", [""].concat(S.d.cauHinh.teams), m.Team) + sel("Trạng thái", ["Active", "Inactive", "Left"], m.trangThai) + "</div>" +
       '<div class="grid2">' + sel("Loại", ["Chính thức", "Thử việc", "Danh dự", "Khách mời"], m["Loại"] || "Chính thức") + inp("Số áo", "tel") + "</div>" +
       '<div class="grid2">' + inp("Nghỉ từ", "date") + inp("Nghỉ đến", "date") + "</div>" +
       '<div class="grid2">' + inp("Ngày vào", "date") + inp("Ngày rời", "date") + "</div>" + inp("Ghi chú") +
