@@ -146,3 +146,28 @@ nav.bot button.on svg { stroke: var(--g); }
 .photo-prev { width: 100%; max-height: 240px; object-fit: cover; border-radius: 10px; margin-top: 8px; }
 hr.s { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .err { background: var(--redbg); color: var(--red); padding: 14px; border-radius: 12px; margin: 14px; }
+
+/* tổng quan & quỹ */
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.kpis.two { grid-template-columns: 1fr 1fr; }
+.kpis div { background: var(--card); border-radius: 12px; padding: 12px; box-shadow: 0 1px 0 var(--line); }
+.kpis span { display: block; font-size: 12px; color: var(--mute); font-weight: 600; }
+.kpis b { display: block; font-size: 20px; color: var(--g); margin-top: 4px; font-weight: 800; }
+.kpis small { font-size: 12px; color: var(--mute); }
+b.pos, .pos { color: var(--g) !important; }
+b.neg, .neg { color: var(--red) !important; }
+.prog { height: 12px; background: var(--iv2); border-radius: 99px; overflow: hidden; }
+.prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--mid), var(--g)); border-radius: 99px; }
+.hbar { margin-top: 10px; font-size: 14px; }
+.hbar .track { height: 8px; background: var(--iv2); border-radius: 99px; margin-top: 5px; overflow: hidden; }
+.hbar .track i { display: block; height: 100%; border-radius: 99px; }
+.vbars { display: flex; align-items: flex-end; gap: 10px; height: 170px; padding-top: 10px; overflow-x: auto; }
+.vbars div { flex: 1; min-width: 38px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; }
+.vbars i { display: block; width: 70%; background: var(--g); border-radius: 6px 6px 0 0; }
+.vbars div:last-child i { background: var(--gold); }
+.vbars small { font-size: 11px; color: var(--mute); font-weight: 600; }
+.vbars span { font-size: 12px; font-weight: 700; color: var(--g); }
+.tabs.seg { background: var(--iv2); padding: 4px; border-radius: 999px; }
+.tabs.seg .tab { flex: 1; background: transparent; }
+.tabs.seg .tab.on { background: var(--g); }
+li.bgf { border-bottom: 1px solid var(--line); padding-bottom: 12px; }
