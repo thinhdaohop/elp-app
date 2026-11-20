@@ -130,6 +130,8 @@
     var h = '<div class="hero"><div class="lbl" style="color:#C5A059">' + (t.homNay ? "HÔM NAY" : "TRẬN SẮP TỚI") + '</div><div class="when">' + esc(t.ngayVN) + " · " + esc(t.bongLan.replace(":", "h")) + '</div><div class="where">📍 ' + esc(t.san) + " · check-in trước " + esc(t.hanCheckin.slice(0, 5).replace(":", "h")) + "</div>" +
       '<div class="kits">' + TEAMS.map(function (tm, i) { return '<div class="kit' + (myTeam === tm ? " me" : "") + '"><b>' + esc(tm) + "</b> · áo " + esc((i ? t.ao2 : t.ao1) || "chưa chốt") + "</div>"; }).join("") + "</div>" +
       '<div class="st">' + st + "</div></div>";
+    var TN = S.d.cauHinh.thuNghiem;
+    if (TN) h += '<div class="banner warn"><b>🧪 Giai đoạn thử nghiệm</b>Vote, check-in và lỗi Sao đỏ chỉ để chạy thử quy trình, chưa tính phạt, chưa ghi vào sổ.</div>';
     var hc = toi.hanChe;
     if (hc) h += '<div class="banner ' + (hc.muc === "CAM" ? "bad" : "warn") + '"><b>' + (hc.muc === "CAM" ? "⛔ Bạn đang bị cấm thi đấu" : "⚠️ Bạn chỉ được vào sân từ phút 46") + "</b>" + esc(hc.lyDo) + (hc.nhan && hc.muc !== "CAM" && hc.nhan !== "Phút 46" ? " · " + esc(hc.nhan.replace("Phút 46 · ", "")) : "") +
       ' · <a href="#" id="toVi">Đóng ngay</a></div>';
@@ -139,15 +141,16 @@
     h += '<div class="card"><h2>Vote điểm danh' + (v ? '<span class="r">Đã vote</span>' : "") + '</h2><div class="votes">' +
       vbtn("DUNG_GIO", "Có mặt đúng giờ", "Có mặt trước " + t.hanCheckin.slice(0, 5)) + vbtn("DI_MUON", "Có mặt, đi muộn", "Ghi số phút dự kiến") + vbtn("NGHI", "Nghỉ có lý do", "Ghi lý do") + "</div>" +
       '<div id="vx"></div>' + (khoa ? "" : '<button class="btn" id="luuVote">' + (v ? "Cập nhật vote" : "Gửi vote") + "</button>") +
-      (khoa && !v && t.trangThai !== "Hủy" ? '<div class="banner bad" style="margin:12px 0 0"><b>Bạn chưa vote</b>Vote đã khóa, Sao đỏ ghi lỗi Không vote (50k).</div>' : "") + "</div>";
+      (khoa && !v && t.trangThai !== "Hủy" ? '<div class="banner bad" style="margin:12px 0 0"><b>Bạn chưa vote</b>' + (TN ? "Vote đã khóa. Đang chạy thử nên chưa tính lỗi Không vote." : "Vote đã khóa, Sao đỏ ghi lỗi Không vote (50k).") + "</div>" : "") + "</div>";
     function vbtn(k, a, b) { return '<button class="vbtn' + (v === k ? " on" : "") + '" data-v="' + k + '"' + (khoa ? " disabled" : "") + '><span class="dot"></span><span>' + a + "<small>" + b + "</small></span></button>"; }
 
     // check-in
     if (t.trangThai !== "Hủy") {
       h += '<div class="card"><h2>Check-in tại sân</h2>';
       if (toi.checkin) h += '<div class="banner ' + (toi.muon ? "warn" : "ok") + '" style="margin:0"><b>' + (toi.muon ? "⏰ Đã check-in " + esc(toi.checkin) + " · đi muộn" : "✅ Đã check-in " + esc(toi.checkin) + " · đúng giờ") + "</b>" + (toi.hoBoi ? "Check-in hộ bởi " + esc(toi.hoBoi) : "Ghi nhận bằng GPS tại sân") + "</div>";
-      else if (t.homNay && t.trangThai !== "Đã chốt") h += '<div class="muted">Đứng trong khu vực sân rồi bấm nút. Hạn đúng giờ: ' + esc(t.hanCheckin) + '.</div><button class="btn gold big" id="ci">📍 Check-in ngay</button>';
-      else h += '<div class="muted">Nút check-in mở trong ngày thi đấu, từ 3 tiếng trước giờ bóng lăn.</div>';
+      else if (t.homNay && t.trangThai !== "Đã chốt" && now() >= t.moCiMs && now() <= t.dongCiMs) h += '<div class="muted">Đứng trong khu vực sân rồi bấm nút. Đúng giờ: trước ' + esc(t.hanCheckin) + " · đóng lúc " + esc(t.dongCi) + '.</div><button class="btn gold big" id="ci">📍 Check-in ngay</button>';
+      else if (t.homNay && now() > t.dongCiMs) h += '<div class="muted">Đã hết giờ check-in (' + esc(t.moCi) + "–" + esc(t.dongCi) + "). Có mặt mà chưa check-in thì báo Sao đỏ check-in hộ.</div>";
+      else h += '<div class="muted">Nút check-in chỉ mở từ <b>' + esc(t.moCi) + " đến " + esc(t.dongCi) + "</b> ngày thi đấu, khi bạn ở sân (bán kính " + esc(t.banKinh) + " m). Đúng giờ: trước " + esc(t.hanCheckin.slice(0, 5)) + ".</div>";
       h += "</div>";
     }
 
@@ -187,6 +190,7 @@
     var tv = document.getElementById("toVi"); if (tv) tv.onclick = function (e) { e.preventDefault(); S.tab = "quy"; S.quyTab = "vi"; ve(); };
     var gb = document.getElementById("toBcs"); if (gb) gb.onclick = function () { S.tab = "bcs"; ve(); window.scrollTo(0, 0); };
     el.querySelectorAll("[data-tm]").forEach(function (b) { b.onclick = function () { S.team = b.dataset.tm; veTran(el); }; });
+    if (t.homNay && !toi.checkin && t.trangThai !== "Đã chốt" && now() < t.dongCiMs) { clearTimeout(veTran._r); veTran._r = setTimeout(function () { if (S.tab === "tran") veTran(el); }, Math.min(Math.max((now() < t.moCiMs ? t.moCiMs : t.dongCiMs) - now() + 1000, 5000), 3600000)); }
     var cd = document.getElementById("cd");
     if (cd) { clearInterval(veTran._i); veTran._i = setInterval(function () { var c = document.getElementById("cd"); if (!c) return clearInterval(veTran._i); c.textContent = demNguoc(t.khoaMs - now()); }, 30000); }
   }
@@ -419,7 +423,7 @@
       '<div class="field"><label>Người / team vi phạm</label><select id="doiTuong"></select></div>' +
       '<div class="field"><label>Ảnh bằng chứng (nếu có)</label><input type="file" id="anh" accept="image/*" capture="environment"><img id="prev" class="photo-prev" hidden alt="Ảnh vừa chụp"></div>' +
       '<div class="field"><label>Ghi chú</label><input type="text" id="ghiChu" maxlength="200" placeholder="VD: mặc áo đỏ, phút 30…"></div>' +
-      '<button class="btn" id="ghi">Ghi lỗi</button><div class="muted" style="margin-top:8px">Lỗi chờ chốt đến 19h thứ 7 rồi tự vào sổ SAO ĐỎ. Thẻ vàng, thẻ đỏ ghi cho team, chia đều cuối mùa.</div></div>';
+      '<button class="btn" id="ghi">Ghi lỗi</button><div class="muted" style="margin-top:8px">' + (ch.thuNghiem ? "🧪 Đang chạy thử: lỗi chỉ lưu ở tab VI PHẠM, không vào sổ SAO ĐỎ, không tính phạt." : "Lỗi chờ chốt đến 19h thứ 7 rồi tự vào sổ SAO ĐỎ. Thẻ vàng, thẻ đỏ ghi cho team, chia đều cuối mùa.") + "</div></div>";
     h += '<div class="card"><h2>Vi phạm trận này<span class="r">' + (x.loi || []).filter(function (l) { return l.trangThai !== "Hủy"; }).length + " lỗi</span></h2><ul class=\"list\">" +
       (x.loi || []).map(function (l) {
         var huy = l.trangThai === "Chờ chốt" || l.trangThai === "Team – chia cuối mùa";
