@@ -242,3 +242,20 @@ svg.lc .ax { font-size: 10px; fill: #8C938F; font-family: inherit; }
 .cards i { display: block; width: 12px; height: 16px; border-radius: 2px; }
 .cards .cy { background: #F2C230; } .cards .cr { background: #C8352B; }
 .list li .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+/* giải đấu */
+.tabs.seg .tab { padding: 8px 6px; font-size: 13px; }
+details.fm { margin-top: 12px; }
+details.fm > summary { font-weight: 700; color: var(--g); cursor: pointer; font-size: 15px; }
+.teams2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.tc { background: var(--iv); border-radius: 12px; padding: 12px; min-width: 0; }
+.tc b { font-size: 15px; color: var(--g); }
+.tdot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.roster { font-size: 13px; color: var(--ch); margin-top: 6px; line-height: 1.45; }
+.caprow { display: grid; grid-template-columns: 22px 1fr auto 1fr 26px; gap: 6px; align-items: center; margin-top: 6px; }
+.caprow select { padding: 8px 6px; font-size: 14px; }
+.caprow .cn { font-size: 12px; color: var(--mute); text-align: center; font-weight: 700; }
+.caprow .vs { font-size: 12px; color: var(--mute); }
+.caprow .x { border: 0; background: var(--redbg); color: var(--red); border-radius: 50%; width: 24px; height: 24px; font-weight: 800; }
+.prog.goal { position: relative; overflow: visible; }
+.prog.goal b { position: absolute; top: -3px; width: 2px; height: 18px; background: var(--ch); }
