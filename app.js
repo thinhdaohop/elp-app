@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   var CFG = window.ELP_CONFIG || {};
-  var S = { ten: store("elp_ten"), token: store("elp_token"), tab: store("elp_tab") || "tq", d: null, ds: null, team: "", tv: null, dash: null, sq: {}, sqM: 0, ts: null, quyTab: "vi" };
+  var S = { ten: store("elp_ten"), token: store("elp_token"), tab: store("elp_tab") || "tq", d: null, ds: null, team: "", tv: null, dash: null, sq: {}, sqM: 0, ts: null, quyTab: "vi", tranTab: "dd", kq: {}, kqMua: "", bxh: {}, bxhMua: "", kqMo: "" };
   if (["tq", "tran", "quy", "ts", "toi", "bcs"].indexOf(S.tab) === -1) S.tab = "tq";
   var $app = document.getElementById("app");
 
@@ -100,7 +100,7 @@
   // ---------- khung chính ----------
   function taiLai(splash) {
     if (splash) $app.innerHTML = '<div class="splash"><div class="brand">ELEVEN PARK FC</div><div class="spin"></div></div>';
-    S.dash = null; S.sq = {}; S.ts = null; S.tv = null;
+    S.dash = null; S.sq = {}; S.ts = null; S.tv = null; S.kq = {}; S.bxh = {};
     return api("tongQuan").then(function (d) { S.d = d; ve(); })
       .catch(function (e) { if (!S.token) moLogin(); else $app.innerHTML = '<div class="err">' + esc(e.message) + '</div><button class="btn" style="margin:14px;width:auto" onclick="location.reload()">Thử lại</button>'; });
   }
@@ -119,8 +119,88 @@
     ({ tq: veTq, tran: veTran, quy: veQuy, ts: veTs, toi: veHoSo, bcs: veBcs })[S.tab](document.getElementById("main"));
   }
 
-  // ---------- TRẬN ĐẤU ----------
+  // ---------- TRẬN ĐẤU: điểm danh · kết quả · BXH ----------
   function veTran(el) {
+    el.innerHTML = '<div class="tabs seg">' + [["dd", "Điểm danh"], ["kq", "Kết quả"], ["bxh", "BXH"]].map(function (x) {
+      return '<button class="tab' + (S.tranTab === x[0] ? " on" : "") + '" data-tt="' + x[0] + '">' + x[1] + "</button>"; }).join("") + '</div><div id="tv"></div>';
+    el.querySelectorAll("[data-tt]").forEach(function (b) { b.onclick = function () { S.tranTab = b.dataset.tt; veTran(el); }; });
+    var box = document.getElementById("tv");
+    ({ dd: veDiemDanh, kq: veKetQua, bxh: veBxh })[S.tranTab](box);
+  }
+  function teamTen() { return S.d.cauHinh.teams || ["Team 1", "Team 2"]; }
+  function veKetQua(el) {
+    var key = S.kqMua || "_";
+    if (!S.kq[key]) { choTai(el); api("ketQua", { mua: S.kqMua }).then(function (r) { S.kq[key] = r; S.kq[r.mua] = r; if (S.tranTab === "kq") veKetQua(el); }).catch(function (e) { el.innerHTML = '<div class="err">' + esc(e.message) + "</div>"; }); return; }
+    var K = S.kq[key], T = teamTen(), h = "";
+    if (K.muaCo.length > 1) h += '<div class="tabs">' + K.muaCo.map(function (m) { return '<button class="tab' + (m.ma === K.mua ? " on" : "") + '" data-mua="' + m.ma + '">' + esc(m.ten) + "</button>"; }).join("") + "</div>";
+    if (S.d.cauHinh.thuNghiem) h += '<div class="banner warn"><b>🧪 Giai đoạn thử nghiệm</b>Kết quả nhập lúc này để chạy thử, chưa tính vào bảng xếp hạng.</div>';
+    if (!K.tran.length) h += '<div class="card empty">' + esc(K.tenMua) + ": chưa có trận nào diễn ra.</div>";
+    K.tran.forEach(function (t) {
+      var ban = function (i) { return t.ev.filter(function (e) { return (e.loai === "BAN" || e.loai === "PHAN_LUOI") && e.team === T[i]; }).length; };
+      h += '<div class="card"><div class="row"><b style="color:#0B3D2E">' + esc(t.ngayVN) + '</b><span class="sp"></span>' + (t.kq ? (t.kq.tinh ? "" : '<span class="pill warn">Chưa tính BXH</span>') : '<span class="pill">Chưa có kết quả</span>') + "</div>" +
+        '<div class="score"><div class="st"><b>' + esc(T[0]) + "</b><small>" + esc(t.ao1 ? "áo " + t.ao1 : "") + '</small></div><div class="sc">' + (t.kq ? t.kq.b1 + " – " + t.kq.b2 : "– : –") + '</div><div class="st r"><b>' + esc(T[1]) + "</b><small>" + esc(t.ao2 ? "áo " + t.ao2 : "") + "</small></div></div>";
+      if (t.ev.length) h += '<div class="evs">' + [0, 1].map(function (i) {
+        return '<div class="evc' + (i ? " r" : "") + '">' + t.ev.filter(function (e) { return e.team === T[i]; }).map(function (e) {
+          var ic = { BAN: "⚽", PHAN_LUOI: "⚽", VANG: "🟨", DO: "🟥" }[e.loai];
+          return '<div class="ev">' + ic + " " + esc(e.nick) + (e.loai === "PHAN_LUOI" ? " (phản lưới)" : "") + (e.phut ? " " + esc(e.phut) + "′" : "") + (e.ktNick ? '<small>kiến tạo: ' + esc(e.ktNick) + "</small>" : "") +
+            (K.sua && S.kqMo === t.ma ? ' <button class="x" data-xsk="' + esc(e.ma) + '" aria-label="Xóa">×</button>' : "") + "</div>";
+        }).join("") + "</div>";
+      }).join("") + "</div>";
+      if (t.kq && (ban(0) !== t.kq.b1 || ban(1) !== t.kq.b2) && t.ev.some(function (e) { return e.loai === "BAN" || e.loai === "PHAN_LUOI"; }))
+        h += '<div class="muted" style="font-size:12.5px;margin-top:6px">ℹ️ Đã ghi ' + ban(0) + " – " + ban(1) + " bàn có tên người ghi, tỉ số là " + t.kq.b1 + " – " + t.kq.b2 + ".</div>";
+      if (K.sua) {
+        if (S.kqMo === t.ma) {
+          var opt = function (team, rong) { return (rong ? '<option value="">— Không có —</option>' : '<option value="">— Chọn cầu thủ —</option>') + T.map(function (tm) {
+            return '<optgroup label="' + esc(tm) + '">' + K.nguoi.filter(function (n) { return n.team === tm; }).map(function (n) { return '<option value="' + esc(n.ten) + '">' + esc(n.nick) + "</option>"; }).join("") + "</optgroup>"; }).join("") +
+            (K.nguoi.some(function (n) { return !n.team; }) ? '<optgroup label="Chưa xếp team">' + K.nguoi.filter(function (n) { return !n.team; }).map(function (n) { return '<option value="' + esc(n.ten) + '">' + esc(n.nick) + "</option>"; }).join("") + "</optgroup>" : ""); };
+          h += '<hr class="s"><div class="lbl">Tỉ số</div><div class="grid2"><div class="field"><label>' + esc(T[0]) + '</label><input type="number" min="0" id="b1" value="' + (t.kq ? t.kq.b1 : "") + '"></div><div class="field"><label>' + esc(T[1]) + '</label><input type="number" min="0" id="b2" value="' + (t.kq ? t.kq.b2 : "") + '"></div></div>' +
+            '<button class="btn" data-luukq="' + t.ma + '">Lưu tỉ số</button>' +
+            '<hr class="s"><div class="lbl">Thêm bàn thắng / thẻ</div><div class="grid2"><div class="field"><label>Loại</label><select id="skLoai"><option value="BAN">⚽ Bàn thắng</option><option value="PHAN_LUOI">⚽ Phản lưới nhà</option><option value="VANG">🟨 Thẻ vàng</option><option value="DO">🟥 Thẻ đỏ</option></select></div>' +
+            '<div class="field"><label>Phút (nếu nhớ)</label><input type="number" min="1" max="130" id="skPhut"></div></div>' +
+            '<div class="field"><label>Cầu thủ</label><select id="skCt">' + opt() + '</select></div><div class="field" id="ktBox"><label>Kiến tạo</label><select id="skKt">' + opt(null, true) + "</select></div>" +
+            '<button class="btn gold" data-themsk="' + t.ma + '">Thêm</button><div class="muted" style="font-size:12.5px;margin-top:8px">Thẻ vàng 50k, thẻ đỏ 100k tự ghi vào quỹ phạt của team (chia đều cuối mùa).</div>' +
+            '<button class="btn ghost" data-dong="1">Xong</button>';
+        } else h += '<button class="btn ghost" data-mo="' + t.ma + '" style="margin-top:12px">' + (t.kq ? "✏️ Sửa kết quả" : "＋ Nhập kết quả") + "</button>";
+      }
+      h += "</div>";
+    });
+    el.innerHTML = h;
+    var reload = function (r) { S.kq = {}; S.bxh = {}; S.kq[r.mua] = r; S.kq[S.kqMua || "_"] = r; veKetQua(el); };
+    el.querySelectorAll("[data-mua]").forEach(function (b) { b.onclick = function () { S.kqMua = b.dataset.mua; veKetQua(el); }; });
+    el.querySelectorAll("[data-mo]").forEach(function (b) { b.onclick = function () { S.kqMo = b.dataset.mo; veKetQua(el); }; });
+    el.querySelectorAll("[data-dong]").forEach(function (b) { b.onclick = function () { S.kqMo = ""; veKetQua(el); }; });
+    var lo = document.getElementById("skLoai"); if (lo) lo.onchange = function () { document.getElementById("ktBox").hidden = lo.value !== "BAN"; };
+    el.querySelectorAll("[data-luukq]").forEach(function (b) { b.onclick = function () {
+      run(b, api("luuKetQua", { maTran: b.dataset.luukq, b1: document.getElementById("b1").value, b2: document.getElementById("b2").value }), "Đã lưu tỉ số ✅").then(reload).catch(function () {}); }; });
+    el.querySelectorAll("[data-themsk]").forEach(function (b) { b.onclick = function () {
+      var ct = document.getElementById("skCt").value; if (!ct) return toast("Chọn cầu thủ", true);
+      run(b, api("themSuKien", { maTran: b.dataset.themsk, loai: lo.value, cauThu: ct, kienTao: lo.value === "BAN" ? document.getElementById("skKt").value : "", phut: document.getElementById("skPhut").value }), "Đã thêm ✅").then(reload).catch(function () {}); }; });
+    el.querySelectorAll("[data-xsk]").forEach(function (b) { b.onclick = function () { run(b, api("xoaSuKien", { ma: b.dataset.xsk }), "Đã xóa").then(reload).catch(function () {}); }; });
+  }
+  function veBxh(el) {
+    var key = S.bxhMua || "_";
+    if (!S.bxh[key]) { choTai(el); api("bxh", { mua: S.bxhMua }).then(function (r) { S.bxh[key] = r; S.bxh[r.mua] = r; if (S.tranTab === "bxh") veBxh(el); }).catch(function (e) { el.innerHTML = '<div class="err">' + esc(e.message) + "</div>"; }); return; }
+    var B = S.bxh[key], h = "";
+    if (B.muaCo.length > 1) h += '<div class="tabs">' + B.muaCo.map(function (m) { return '<button class="tab' + (m.ma === B.mua ? " on" : "") + '" data-mua="' + m.ma + '">' + esc(m.ten) + "</button>"; }).join("") + "</div>";
+    h += '<div class="card"><h2>🏆 Bảng xếp hạng team<span class="r">' + esc(B.tenMua) + " · " + B.soTran + " trận</span></h2>" +
+      '<table class="bxh"><tr><th>#</th><th class="l">Team</th><th>Tr</th><th>T-H-B</th><th>HS</th><th>Đ</th></tr>' + B.team.map(function (t, i) {
+        return "<tr><td>" + (i + 1) + '</td><td class="l"><b>' + esc(t.team) + '</b><div class="form">' + t.form.map(function (f) { return '<i class="f' + f + '">' + f + "</i>"; }).join("") + "</div></td><td>" + t.tr + "</td><td>" + t.th + "-" + t.h + "-" + t.b +
+          "</td><td>" + (t.hs > 0 ? "+" : "") + t.hs + '</td><td><b>' + t.d + "</b></td></tr>";
+      }).join("") + "</table>" + (B.soTran ? '<div class="muted" style="font-size:12.5px;margin-top:8px">Thắng 3 điểm, hòa 1. T = thắng, H = hòa, B = thua.</div>' : '<div class="muted" style="margin-top:8px">Chưa có trận nào tính vào bảng xếp hạng' + (S.d.cauHinh.thuNghiem ? " (giai đoạn thử nghiệm chưa tính)." : ".") + "</div>") + "</div>";
+    h += top("⚽ Vua phá lưới", B.ghiBan, function (x) { return x.so + " bàn"; });
+    h += top("🎯 Kiến tạo", B.kienTao, function (x) { return x.so + " lần"; });
+    h += top("🟨 Thẻ phạt", B.the, function (x) { return (x.vang ? x.vang + " vàng" : "") + (x.vang && x.doo ? " · " : "") + (x.doo ? x.doo + " đỏ" : ""); });
+    h += top("✅ Chuyên cần", B.chuyenCan, function (x) { return x.so + "/" + B.soChot + " trận · " + x.tyLe + "%"; });
+    el.innerHTML = h;
+    el.querySelectorAll("[data-mua]").forEach(function (b) { b.onclick = function () { S.bxhMua = b.dataset.mua; veBxh(el); }; });
+    function top(ten, ds, fmt) {
+      return '<div class="card"><h2>' + ten + "</h2>" + (ds.length ? '<ul class="list">' + ds.map(function (x, i) {
+        return '<li><div class="av' + (i === 0 ? " ok" : "") + '">' + (i + 1) + '</div><div class="who"><b>' + esc(x.nick) + '</b></div><b style="color:#0B3D2E">' + esc(fmt(x)) + "</b></li>";
+      }).join("") + "</ul>" : '<div class="empty">Chưa có số liệu</div>') + "</div>";
+    }
+  }
+
+  function veDiemDanh(el) {
     var x = S.d.tran, vi = S.d.vi, me = S.d.me;
     if (!x) { el.innerHTML = '<div class="card empty">Chưa có lịch thi đấu. Vote mở lúc 10h sáng thứ 3 hằng tuần.</div>'; return; }
     var t = x.tran, toi = x.toi || {}, lech = Date.now() - x.gioServer, now = function () { return Date.now() - lech; };
@@ -189,10 +269,10 @@
     if (cib) cib.onclick = function () { checkin(cib, t); };
     var tv = document.getElementById("toVi"); if (tv) tv.onclick = function (e) { e.preventDefault(); S.tab = "quy"; S.quyTab = "vi"; ve(); };
     var gb = document.getElementById("toBcs"); if (gb) gb.onclick = function () { S.tab = "bcs"; ve(); window.scrollTo(0, 0); };
-    el.querySelectorAll("[data-tm]").forEach(function (b) { b.onclick = function () { S.team = b.dataset.tm; veTran(el); }; });
-    if (t.homNay && !toi.checkin && t.trangThai !== "Đã chốt" && now() < t.dongCiMs) { clearTimeout(veTran._r); veTran._r = setTimeout(function () { if (S.tab === "tran") veTran(el); }, Math.min(Math.max((now() < t.moCiMs ? t.moCiMs : t.dongCiMs) - now() + 1000, 5000), 3600000)); }
+    el.querySelectorAll("[data-tm]").forEach(function (b) { b.onclick = function () { S.team = b.dataset.tm; veDiemDanh(el); }; });
+    if (t.homNay && !toi.checkin && t.trangThai !== "Đã chốt" && now() < t.dongCiMs) { clearTimeout(veDiemDanh._r); veDiemDanh._r = setTimeout(function () { if (S.tab === "tran" && S.tranTab === "dd") veDiemDanh(el); }, Math.min(Math.max((now() < t.moCiMs ? t.moCiMs : t.dongCiMs) - now() + 1000, 5000), 3600000)); }
     var cd = document.getElementById("cd");
-    if (cd) { clearInterval(veTran._i); veTran._i = setInterval(function () { var c = document.getElementById("cd"); if (!c) return clearInterval(veTran._i); c.textContent = demNguoc(t.khoaMs - now()); }, 30000); }
+    if (cd) { clearInterval(veDiemDanh._i); veDiemDanh._i = setInterval(function () { var c = document.getElementById("cd"); if (!c) return clearInterval(veDiemDanh._i); c.textContent = demNguoc(t.khoaMs - now()); }, 30000); }
   }
   function sapXep(a, b) {
     var w = function (r) { return r.checkin ? 0 : r.vote === "DUNG_GIO" ? 1 : r.vote === "DI_MUON" ? 2 : !r.vote ? 3 : 4; };
@@ -419,7 +499,7 @@
     var t = x.tran, tv = x.ds.slice().sort(function (a, b) { return a.nick.localeCompare(b.nick, "vi"); });
     var h = '<div class="card"><h2>Ghi vi phạm · ' + esc(t.ngayVN) + '</h2>' +
       '<div class="field"><label>Lỗi</label><select id="maLoi"><option value="">— Chọn lỗi —</option>' +
-      ch.loi.map(function (l) { return '<option value="' + l.ma + '" data-team="' + (l.team ? 1 : 0) + '">' + esc(l.ten) + " · " + vnd(l.tien) + (l.tuDong ? " (app tự ghi)" : "") + "</option>"; }).join("") + "</select></div>" +
+      ch.loi.filter(function (l) { return !l.team; }).map(function (l) { return '<option value="' + l.ma + '" data-team="' + (l.team ? 1 : 0) + '">' + esc(l.ten) + " · " + vnd(l.tien) + (l.tuDong ? " (app tự ghi)" : "") + "</option>"; }).join("") + "</select></div>" +
       '<div class="field"><label>Người / team vi phạm</label><select id="doiTuong"></select></div>' +
       '<div class="field"><label>Ảnh bằng chứng (nếu có)</label><input type="file" id="anh" accept="image/*" capture="environment"><img id="prev" class="photo-prev" hidden alt="Ảnh vừa chụp"></div>' +
       '<div class="field"><label>Ghi chú</label><input type="text" id="ghiChu" maxlength="200" placeholder="VD: mặc áo đỏ, phút 30…"></div>' +

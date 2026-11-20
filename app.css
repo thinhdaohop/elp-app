@@ -171,3 +171,24 @@ b.neg, .neg { color: var(--red) !important; }
 .tabs.seg .tab { flex: 1; background: transparent; }
 .tabs.seg .tab.on { background: var(--g); }
 li.bgf { border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+
+/* kết quả & BXH */
+.score { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.score .st { flex: 1; min-width: 0; }
+.score .st.r { text-align: right; }
+.score .st b { display: block; font-size: 15px; color: var(--g); }
+.score .st small { font-size: 12px; color: var(--mute); }
+.score .sc { font-size: 34px; font-weight: 800; color: var(--g); white-space: nowrap; letter-spacing: 1px; }
+.evs { display: flex; gap: 10px; margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.evc { flex: 1; min-width: 0; }
+.evc.r { text-align: right; }
+.ev { font-size: 14px; padding: 3px 0; }
+.ev small { display: block; font-size: 12px; color: var(--mute); }
+.ev .x { border: 0; background: var(--redbg); color: var(--red); border-radius: 50%; width: 22px; height: 22px; font-weight: 800; line-height: 1; }
+table.bxh { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.bxh th { font-size: 12px; color: var(--mute); font-weight: 700; padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+table.bxh td { padding: 10px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+table.bxh .l { text-align: left; }
+.form { margin-top: 4px; display: flex; gap: 3px; }
+.form i { font-style: normal; font-size: 10px; font-weight: 800; width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+.form .fT { background: var(--mid); } .form .fH { background: #9AA19D; } .form .fB { background: var(--red); }
