@@ -305,15 +305,26 @@
       if (chinh) {
         x += '<div class="teams2">' + g.teams.map(function (tm, i) {
           var ao = i ? g.ao2 : g.ao1;
-          return '<div class="tc"><div class="row"><i class="tdot" style="background:' + MAU_TEAM[i] + '"></i><b>' + esc(tm) + "</b></div>" +
-            '<div class="muted" style="font-size:12.5px">' + esc(ao ? "Áo " + ao + " · " : "") + g.doiHinh[i].length + ' ae</div><div class="roster">' + esc(g.doiHinh[i].join(", ") || "Chưa có ai") + "</div></div>";
+          var lg = (g.logo || [])[i];
+          return '<div class="tc"><div class="row">' + (lg ? '<img class="tlogo l" src="' + esc(lg) + '" alt="Logo ' + esc(tm) + '">' : '<i class="tdot" style="background:' + MAU_TEAM[i] + '"></i>') + "<b>" + esc(tm) + "</b></div>" +
+            '<div class="muted" style="font-size:12.5px">' + esc(ao ? "Áo " + ao + " · " : "") + g.doiHinh[i].length + " ae</div>" +
+            '<div class="cap2">' + ((g.dt || [])[i] ? "🅒 " + esc(g.dt[i]) : '<span class="muted">Chưa có đội trưởng</span>') + ((g.dp || [])[i] ? "<br>🅥 " + esc(g.dp[i]) : "") + "</div>" +
+            '<div class="roster">' + esc(g.doiHinh[i].join(", ") || "Chưa có ai") + "</div>" +
+            ((g.suaTeam || [])[i] || ad ? '<button class="btn sm ghost" data-st="' + i + '" style="margin-top:8px">✏️ Sửa team</button>' : "") + "</div>";
         }).join("") + "</div>";
+        x += '<div id="stForm"></div>';
+        if (g.quyThe) x += '<hr class="s"><div class="lbl">🟨🟥 Quỹ thẻ team (chia đều cuối mùa)</div><div class="teams2" style="margin-top:8px">' + g.quyThe.map(function (q, i) {
+          return '<div class="tc"><b style="font-size:14px">' + esc(q.team) + '</b><div class="row" style="margin-top:6px"><span class="cards">' + new Array(Math.min(q.vang, 12) + 1).join('<i class="cy"></i>') + new Array(Math.min(q.doo, 12) + 1).join('<i class="cr"></i>') + "</span></div>" +
+            '<div class="muted" style="font-size:12.5px;margin-top:6px">' + q.vang + " vàng × 50k + " + q.doo + " đỏ × 100k</div>" + '<div style="font-size:20px;font-weight:800;color:#0B3D2E">' + vnd(q.tien) + "</div>" +
+            '<div class="muted" style="font-size:12.5px">' + (q.moiNguoi ? "≈ " + vnd(q.moiNguoi) + "/người · " + q.soNguoi + " ae" : q.soNguoi + " ae") + (q.thuNghiem ? " · " + q.thuNghiem + " thẻ thử nghiệm không tính" : "") + "</div></div>";
+        }).join("") + "</div>" + (g.daChiaThe ? '<div class="banner ok" style="margin:10px 0 0"><b>✅ Đã chia tiền thẻ</b>' + esc(g.daChiaThe) + ". Mỗi người nộp qua Ví › mã QR Phạt thẻ team.</div>" :
+          (ad ? '<button class="btn gold" id="chotThe"' + (G.thuNghiem ? " disabled" : "") + ">Chốt chia tiền thẻ cuối mùa</button>" + (G.thuNghiem ? '<div class="muted" style="font-size:12.5px;margin-top:6px">🧪 Đang thử nghiệm: chưa chia tiền.</div>' : "") : ""));
         x += '<details class="tbl"><summary>Lịch ' + g.tongTran + " vòng</summary>" + '<ul class="list">' + g.lich.map(function (t) {
           return '<li><div class="av">V' + esc(t.vong || "?") + '</div><div class="who"><b>' + esc(t.ngayVN) + "</b><span>" + esc(t.trangThai) + "</span></div>" + (t.kq ? '<b style="font-size:17px;color:#0B3D2E">' + esc(t.kq) + "</b>" : "") + "</li>";
         }).join("") + "</ul></details>";
         if (ad) {
           x += '<hr class="s"><div class="lbl">🎲 Chia team: lập cặp rồi bốc thăm</div><div class="muted" style="font-size:12.5px;margin:4px 0 8px">Mỗi cặp là 2 người tương đương nhau. Bốc thăm đưa mỗi người trong cặp về một team. Người lẻ để ô thứ 2 trống, app xếp vào team ít người hơn.</div><div id="caps"></div>' +
-            '<button class="btn sm ghost" id="capThem" style="margin-top:8px">＋ Thêm cặp</button><button class="btn ghost" id="capLuu">Lưu danh sách cặp</button><button class="btn gold" id="boc"' + (g.cap.length ? "" : " disabled") + ">🎲 Bốc thăm chia team</button>";
+            '<button class="btn sm ghost" id="capThem" style="margin-top:8px">＋ Thêm cặp</button> <button class="btn sm" id="capGoiY" style="margin-top:8px">✨ Gợi ý cặp tự động</button><button class="btn ghost" id="capLuu">Lưu danh sách cặp</button><button class="btn gold" id="boc"' + (g.cap.length ? "" : " disabled") + ">🎲 Bốc thăm chia team</button>";
           if (g.cap.some(function (c) { return c.aVe; })) x += '<details class="tbl"><summary>Kết quả bốc thăm gần nhất (' + esc(g.cap[0].luc) + ")</summary>" + '<ul class="list">' + g.cap.map(function (c, i) {
             return '<li><div class="av">' + (i + 1) + '</div><div class="who"><b>' + esc(c.aNick) + " → " + esc(c.aVe) + "</b>" + (c.b ? "<span>" + esc(c.bNick) + " → " + esc(c.bVe) + "</span>" : "<span>(người lẻ)</span>") + "</div></li>";
           }).join("") + "</ul></details>";
@@ -354,17 +365,40 @@
       b.onclick = function () { if (b.dataset.gst === "Hủy" && !confirm("Hủy giải? Các vòng chưa đá sẽ bị hủy.")) return; run(b, api("suaGiai", { ma: b.dataset.gma, trangThai: b.dataset.gst }), "Đã cập nhật").then(nap).catch(function () {}); };
     });
     if (cur && ad) {
-      var caps = cur.cap.map(function (c) { return [c.a, c.b]; }); if (!caps.length) caps = [["", ""]];
+      var caps = cur.cap.map(function (c) { return [c.a, c.b]; }), meta = []; if (!caps.length) caps = [["", ""]];
       var box = document.getElementById("caps");
       var opts = function (val) { return '<option value="">—</option>' + G.nguoi.map(function (n) { return '<option value="' + esc(n.ten) + '"' + (n.ten === val ? " selected" : "") + ">" + esc(n.nick) + (n.viTri ? " · " + esc(n.viTri) : "") + "</option>"; }).join(""); };
       var veCap = function () {
-        box.innerHTML = caps.map(function (c, i) { return '<div class="caprow"><span class="cn">' + (i + 1) + '</span><select data-c="' + i + '" data-k="0">' + opts(c[0]) + '</select><span class="vs">vs</span><select data-c="' + i + '" data-k="1">' + opts(c[1]) + '</select><button class="x" data-xc="' + i + '" aria-label="Xóa cặp">×</button></div>'; }).join("");
+        box.innerHTML = caps.map(function (c, i) { return '<div class="caprow"><span class="cn">' + (i + 1) + '</span><select data-c="' + i + '" data-k="0">' + opts(c[0]) + '</select><span class="vs">vs</span><select data-c="' + i + '" data-k="1">' + opts(c[1]) + '</select><button class="x" data-xc="' + i + '" aria-label="Xóa cặp">×</button></div>' + (meta[i] ? '<div class="capmeta' + (meta[i].canh ? " w" : "") + '">' + esc(meta[i].txt) + "</div>" : ""); }).join("");
         box.querySelectorAll("select").forEach(function (sl) { sl.onchange = function () { caps[+sl.dataset.c][+sl.dataset.k] = sl.value; }; });
         box.querySelectorAll("[data-xc]").forEach(function (b) { b.onclick = function () { caps.splice(+b.dataset.xc, 1); veCap(); }; });
       };
       veCap();
-      o("capThem", function () { caps.push(["", ""]); veCap(); });
+      o("capThem", function () { caps.push(["", ""]); meta.push(null); veCap(); });
+      o("capGoiY", function () {
+        run(this, api("goiYCap"), "Đã gợi ý, kiểm tra rồi bấm Lưu").then(function (r) {
+          var td = function (x) { return (x.muc ? "mức " + x.muc : "chưa có trình độ") + ", CC " + x.cc + "%"; };
+          caps = r.cap.map(function (c) { return [c.a.ten, c.b.ten]; }); meta = r.cap.map(function (c) {
+            return { txt: (c.cungViTri ? c.a.viTri : c.a.viTri + " / " + c.b.viTri + " (khác vị trí)") + " · " + td(c.a) + " | " + td(c.b), canh: !c.cungViTri || c.lechMuc > 1 || !c.a.muc || !c.b.muc }; });
+          if (r.le) { caps.push([r.le.ten, ""]); meta.push({ txt: "Người lẻ · " + r.le.viTri + " · " + td(r.le) + " → về team ít người hơn", canh: true }); }
+          veCap();
+        }).catch(function () {});
+      });
       o("capLuu", function () { run(this, api("luuCap", { maGiai: cur.ma, cap: caps.filter(function (c) { return c[0] || c[1]; }).map(function (c) { return c[0] ? c : [c[1], ""]; }) }), "Đã lưu danh sách cặp ✅").then(nap).catch(function () {}); });
+      el.querySelectorAll("[data-st]").forEach(function (b) { b.onclick = function () {
+        var i = +b.dataset.st, fm = document.getElementById("stForm"), tv = (cur.tvTeam || [])[i] || [];
+        var sel = function (id, val) { return '<select id="' + id + '"><option value="">— Chưa có —</option>' + tv.map(function (n) { return '<option value="' + esc(n.ten) + '"' + (n.ten === val ? " selected" : "") + ">" + esc(n.nick) + "</option>"; }).join("") + "</select>"; };
+        fm.innerHTML = '<div class="tc" style="margin-top:10px"><div class="lbl">Sửa team ' + esc(cur.teams[i]) + "</div>" +
+          ((cur.suaTeam || [])[i] ? '<div class="field"><label>Tên team</label><input type="text" id="stTen" value="' + esc(cur.teams[i]) + '"></div><div class="field"><label>Màu áo</label><input type="text" id="stAo" value="' + esc(i ? cur.ao2 : cur.ao1) + '"></div>' +
+            '<div class="field"><label>Logo team (ảnh vuông)</label><input type="file" id="stLogo" accept="image/*"></div><button class="btn" id="stLuu">Lưu tên, áo, logo</button>' : "") +
+          (ad ? '<hr class="s"><div class="grid2"><div class="field"><label>Đội trưởng</label>' + sel("stDt", (cur.dtTen || [])[i]) + '</div><div class="field"><label>Đội phó</label>' + sel("stDp", (cur.dpTen || [])[i]) + '</div></div><button class="btn ghost" id="stCap">Lưu đội trưởng, đội phó</button>' : "") + "</div>";
+        fm.scrollIntoView({ behavior: "smooth", block: "center" });
+        var logo = "";
+        var fl = document.getElementById("stLogo"); if (fl) fl.onchange = function (e) { var f0 = e.target.files[0]; if (f0) nenAnh(f0, 256, 0.9, "image/png").then(function (b64) { logo = b64; toast("Đã chọn logo"); }); };
+        o("stLuu", function () { run(this, api("suaTeam", { maGiai: cur.ma, idx: i, tenTeam: v("stTen"), ao: v("stAo"), logo: logo }), "Đã lưu team ✅").then(function (r) { nap(r); return taiLai(); }).catch(function () {}); });
+        o("stCap", function () { run(this, api("ganDoiTruong", { maGiai: cur.ma, idx: i, dt: v("stDt"), dp: v("stDp") }), "Đã lưu đội trưởng, đội phó ✅").then(nap).catch(function () {}); });
+      }; });
+      o("chotThe", function () { if (!confirm("Chốt chia tiền thẻ cho " + cur.ten + "? Mỗi thành viên sẽ có khoản nợ trong Ví và bot báo vào nhóm.")) return; run(this, api("chotQuyThe", { maGiai: cur.ma }), "Đã chia tiền thẻ ✅").then(nap).catch(function () {}); });
       o("boc", function () {
         if (!confirm("Bốc thăm chia team cho " + cur.ten + "? Cột Team trong HỒ SƠ sẽ được cập nhật và báo vào nhóm Zalo.")) return;
         run(this, api("bocTham", { maGiai: cur.ma }), "Đã bốc thăm 🎲").then(function (r) { nap(r); }).catch(function () {});
@@ -380,7 +414,7 @@
     var st = t.trangThai === "Hủy" ? "Trận này đã hủy" : t.trangThai === "Đã chốt" ? "Đã chốt điểm danh" :
       t.trangThai === "Khóa" || now() > t.khoaMs ? "Đã khóa vote" : "Khóa vote sau <b id='cd'>" + demNguoc(t.khoaMs - now()) + "</b> (21h thứ 6)";
     var h = '<div class="hero"><div class="lbl" style="color:#C5A059">' + (t.homNay ? "HÔM NAY" : "TRẬN SẮP TỚI") + (t.noiBo ? (t.tenGiai ? " · " + esc(t.tenGiai.toUpperCase()) + (t.vong ? " · VÒNG " + t.vong : "") : "") : " · " + esc((t.loai === "Giao hữu" ? "GIAO HỮU" : t.tenGiai).toUpperCase())) + '</div><div class="when">' + esc(t.ngayVN) + " · " + esc(t.bongLan.replace(":", "h")) + '</div><div class="where">📍 ' + esc(t.san || "Sân chưa chốt") + (t.coGps ? " · check-in trước " + esc(t.hanCheckin.slice(0, 5).replace(":", "h")) : "") + "</div>" +
-      (!t.noiBo ? '<div class="kits"><div class="kit me"><b>Eleven Park</b> ⚔️ ' + esc(t.doiThu || "Đối thủ") + "</div></div>" : '<div class="kits">' + TEAMS.map(function (tm, i) { return '<div class="kit' + (myTeam === tm ? " me" : "") + '"><b>' + esc(tm) + "</b> · áo " + esc((i ? t.ao2 : t.ao1) || "chưa chốt") + "</div>"; }).join("") + "</div>") +
+      (!t.noiBo ? '<div class="kits"><div class="kit me"><b>Eleven Park</b> ⚔️ ' + esc(t.doiThu || "Đối thủ") + "</div></div>" : '<div class="kits">' + TEAMS.map(function (tm, i) { var lg = (S.d.cauHinh.logos || [])[i]; return '<div class="kit' + (myTeam === tm ? " me" : "") + '">' + (lg ? '<img class="tlogo" src="' + esc(lg) + '" alt="">' : "") + "<b>" + esc(tm) + "</b> · áo " + esc((i ? t.ao2 : t.ao1) || "chưa chốt") + "</div>"; }).join("") + "</div>") +
       '<div class="st">' + st + "</div></div>";
     var TN = S.d.cauHinh.thuNghiem;
     if (TN) h += '<div class="banner warn"><b>🧪 Giai đoạn thử nghiệm</b>Vote, check-in và lỗi Sao đỏ chỉ để chạy thử quy trình, chưa tính phạt, chưa ghi vào sổ.</div>';
@@ -605,7 +639,7 @@
     if (!v) { el.innerHTML = '<div class="card empty">Bạn chưa có trong sổ quỹ tab 2026. Nhờ Thủ quỹ kiểm tra.</div>'; return; }
     var h = "";
     if (v.hanChe) h += '<div class="banner ' + (v.hanChe.muc === "CAM" ? "bad" : "warn") + '"><b>' + (v.hanChe.muc === "CAM" ? "⛔ Đang bị cấm thi đấu" : "⚠️ Đang bị hạn chế: vào sân từ phút 46") + "</b>" + esc(v.hanChe.lyDo) + ". Đóng xong là tự gỡ.</div>";
-    else if (!v.quy && !v.phat) h += '<div class="banner ok"><b>✅ Bạn không nợ gì</b>Quỹ T' + v.m + " đã đóng, không nợ phạt. Uy tín!</div>";
+    else if (!v.quy && !v.phat && !v.theDoi) h += '<div class="banner ok"><b>✅ Bạn không nợ gì</b>Quỹ T' + v.m + " đã đóng, không nợ phạt. Uy tín!</div>";
     h += '<div class="card"><h2>Quỹ năm 2026<span class="r">' + vnd(v.rate) + '/tháng</span></h2><div class="months">';
     for (var k = 1; k <= 12; k++) {
       var cls = v.thang[k - 1] ? "paid" : (v.noCu.indexOf(k) !== -1 || (k === v.m && v.nay)) ? "owe" : "";
@@ -613,13 +647,15 @@
     }
     h += '</div><div class="legend"><span><i style="background:#0B3D2E"></i>Đã đóng</span><span><i style="background:#FBF3DF;outline:1px solid #C5A059"></i>Cần đóng</span><span><i style="background:#EFEDE2"></i>Chưa tới / miễn</span></div>' +
       (v.nay && v.day <= 10 ? '<div class="muted" style="margin-top:10px">Hạn đóng quỹ T' + v.m + ": hết ngày 10.</div>" : "") + "</div>";
-    if (v.quy || v.phat || v.tamUng) {
+    if (v.quy || v.phat || v.tamUng || v.theDoi) {
       h += '<div class="card"><h2>Đang nợ</h2>' + (v.quy ? '<div class="debt"><span>Quỹ T' + v.quy.thang.join(", T") + "</span><b>" + vnd(v.quy.tien) + "</b></div>" : "") +
         (v.phat ? '<div class="debt"><span>Phạt Sao đỏ</span><b>' + vnd(v.phat) + "</b></div>" : "") +
+        (v.theDoi ? '<div class="debt"><span>Phạt thẻ team (chia cuối mùa)</span><b>' + vnd(v.theDoi) + "</b></div>" : "") +
         (v.tamUng ? '<div class="debt"><span>Tạm ứng chưa hoàn</span><b>' + vnd(v.tamUng) + "</b></div>" : "") + "</div>";
     }
     if (v.quy) h += qrCard("Đóng quỹ T" + v.quy.thang.join(", T"), v.quy.tien, v.quy.nd, v);
     if (v.phatQr) h += qrCard("Nộp phạt Sao đỏ", v.phatQr.tien, v.phatQr.nd, v);
+    if (v.theDoiQr) h += qrCard("Phạt thẻ team", v.theDoiQr.tien, v.theDoiQr.nd, v);
     h += '<div class="card"><h2>Tài khoản quỹ</h2><div class="debt"><span>Ngân hàng</span><b>' + esc(v.nganHang) + '</b></div><div class="debt"><span>Số tài khoản</span><b>' + esc(v.stk) + '</b></div><div class="debt"><span>Chủ tài khoản</span><b>' + esc(v.chuTk) + "</b></div>" +
       '<div class="muted" style="margin-top:8px">Bot tự ghi sổ khi tiền về và báo vào nhóm Zalo.</div></div>';
     el.innerHTML = h;
@@ -644,6 +680,9 @@
     h += '<div class="card"><h2>Thông tin cá nhân</h2>' +
       f("Biệt danh", "text", me["Biệt danh"]) + '<div class="grid2">' + f("Số áo", "tel", me["Số áo"]) + f("Size áo", "text", me["Size áo"], "S, M, L, XL…") + "</div>" +
       f("SĐT", "tel", me["SĐT"]) + f("Ngày sinh", "date", me["Ngày sinh"]) +
+      '<div class="grid2"><div class="field"><label>Vị trí đá</label><select data-k="Vị trí đá"><option value="">— Chọn —</option>' + (S.d.cauHinh.viTri || []).map(function (v) { return "<option" + ((me["Vị trí đá"] || me.viTriDa) === v ? " selected" : "") + ">" + v + "</option>"; }).join("") + "</select></div>" +
+      '<div class="field"><label>Trình độ tự nhận (1–' + (S.d.cauHinh.mucMax || 10) + ')</label><select data-k="Trình độ tự nhận"><option value="">—</option>' + Array.from({ length: S.d.cauHinh.mucMax || 10 }, function (_, i) { return '<option' + (String(me["Trình độ tự nhận"]) === String(i + 1) ? " selected" : "") + ">" + (i + 1) + "</option>"; }).join("") + "</select></div></div>" +
+      (me.trinhDo && me.trinhDo.bcs ? '<div class="muted" style="font-size:13px;margin-top:6px">⭐ Ban Cán sự chấm: <b style="color:#0B3D2E">mức ' + me.trinhDo.bcs + "</b> (dùng mức này khi chia cặp)</div>" : '<div class="muted" style="font-size:12.5px;margin-top:6px">Trình độ dùng để ghép cặp tương đương khi chia team. Sau mỗi mùa Ban Cán sự sẽ chấm lại.</div>') +
       '<button class="btn" id="luuHs">Lưu thông tin</button></div>';
     h += '<div class="card"><h2>Đổi mã PIN</h2><div class="grid2">' + f("PIN hiện tại", "tel", "", "", "pinCu") + f("PIN mới", "tel", "", "", "pinMoi") + '</div><button class="btn ghost" id="doiPin">Đổi PIN</button></div>' +
       (me.bcs ? '<button class="btn" id="toBcs2" style="margin:0 0 12px">🛡️ Mục Ban Cán sự' + (me.admin ? " · quản trị" : "") + "</button>" : "") +
@@ -654,7 +693,7 @@
       return '<div class="field"><label>' + lab + '</label><input type="' + type + '" data-k="' + (id || lab) + '" value="' + esc(val || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + (type === "tel" && /PIN/.test(lab) ? ' inputmode="numeric" maxlength="4"' : "") + "></div>";
     }
     document.getElementById("luuHs").onclick = function () {
-      var o = {}; ["Biệt danh", "Số áo", "Size áo", "SĐT", "Ngày sinh"].forEach(function (k) { o[k] = el.querySelector('[data-k="' + k + '"]').value; });
+      var o = {}; ["Biệt danh", "Số áo", "Size áo", "SĐT", "Ngày sinh", "Vị trí đá", "Trình độ tự nhận"].forEach(function (k) { o[k] = el.querySelector('[data-k="' + k + '"]').value; });
       run(this, api("luuHoSo", o), "Đã lưu ✅").then(function (r) { Object.assign(S.d.me, r); }).catch(function () {});
     };
     document.getElementById("doiPin").onclick = function () {
@@ -688,6 +727,7 @@
       h += '<div class="card"><h2>Check-in hộ</h2><div class="muted">Cho người có mặt mà điện thoại hết pin, không bật được GPS.</div><div class="field"><select id="ciTen"><option value="">— Chọn thành viên —</option>' +
         chuaCi.map(function (r) { return '<option value="' + esc(r.ten) + '">' + esc(r.nick) + "</option>"; }).join("") + '</select></div><button class="btn ghost" id="ciHo">Check-in hộ lúc này</button></div>';
     }
+    h += '<div class="card"><h2>⭐ Chấm trình độ</h2><div class="muted" style="font-size:13px">Mức BCS chấm được dùng khi ghép cặp chia team (ưu tiên hơn mức tự nhận).</div><div id="tdBox"><button class="btn ghost" id="tdMo">Mở danh sách</button></div></div>';
     if (me.admin) h += adminTran(t) + adminTaoTran() + adminTv();
     el.innerHTML = h;
 
@@ -718,6 +758,18 @@
       run(ciHo, api("checkinHo", { maTran: t.ma, ten2: n }), "Đã check-in hộ ✅").then(function (r) { S.d.tran = r; veBcs(el); }).catch(function () {});
     };
     ganAdmin(el, t);
+    var tdMo = document.getElementById("tdMo"); if (tdMo) tdMo.onclick = function () { run(tdMo, api("dsTrinhDo")).then(function (r) { veTrinhDo(r); }).catch(function () {}); };
+  }
+  function veTrinhDo(r) {
+    var box = document.getElementById("tdBox"); if (!box) return;
+    var nhom = {}; r.ds.forEach(function (x) { (nhom[x.viTri] = nhom[x.viTri] || []).push(x); });
+    box.innerHTML = Object.keys(nhom).map(function (vt) {
+      return '<div class="lbl" style="margin-top:12px">' + esc(vt) + '</div><ul class="list">' + nhom[vt].map(function (x) {
+        return '<li><div class="who"><b>' + esc(x.nick) + "</b><span>Tự nhận: " + (x.tuNhan || "—") + " · chuyên cần " + x.cc + '%</span></div><select class="tdSel" data-td="' + esc(x.ten) + '" aria-label="Trình độ BCS chấm"><option value="">—</option>' +
+          Array.from({ length: r.max }, function (_, i) { return "<option" + (x.bcs === i + 1 ? " selected" : "") + ">" + (i + 1) + "</option>"; }).join("") + "</select></li>";
+      }).join("") + "</ul>";
+    }).join("");
+    box.querySelectorAll("[data-td]").forEach(function (sl) { sl.onchange = function () { run(sl, api("chamTrinhDo", { ten2: sl.dataset.td, muc: sl.value }), "Đã chấm " + (sl.value ? "mức " + sl.value : "(xóa)")).catch(function () {}); }; });
   }
   function adminTran(t) {
     return '<div class="card"><h2>Quản lý trận · ' + esc(t.ngayVN) + '<span class="r">' + esc(t.trangThai) + '</span></h2><div class="grid2">' +
@@ -774,14 +826,14 @@
       run(this, api("suaThanhVien", o), "Đã lưu " + m.nick).then(function (r) { var i = S.tv.indexOf(m); S.tv[i] = r; veTvForm(r); }).catch(function () {});
     };
   }
-  function nenAnh(file, max, q) {
+  function nenAnh(file, max, q, kieu) {
     return new Promise(function (ok, no) {
       var img = new Image(), url = URL.createObjectURL(file);
       img.onload = function () {
         var s = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
         c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
         c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-        ok(c.toDataURL("image/jpeg", q));
+        ok(c.toDataURL(kieu || "image/jpeg", q));
       };
       img.onerror = no; img.src = url;
     });
