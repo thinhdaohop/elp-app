@@ -164,6 +164,7 @@
       }).join("") + "</div>";
       if (t.kq && (ban(0) !== t.kq.b1 || ban(1) !== t.kq.b2) && t.ev.some(function (e) { return e.loai === "BAN" || e.loai === "PHAN_LUOI"; }))
         h += '<div class="muted" style="font-size:12.5px;margin-top:6px">ℹ️ Đã ghi ' + ban(0) + " – " + ban(1) + " bàn có tên người ghi, tỉ số là " + t.kq.b1 + " – " + t.kq.b2 + ".</div>";
+      if (t.kq && /^⚖️/.test(t.kq.ghiChu || "")) h += '<div class="banner warn" style="margin:8px 0 0;font-size:13px">' + esc(t.kq.ghiChu) + "</div>";
       if (K.sua) {
         if (S.kqMo === t.ma) {
           var opt = function (team, rong) { var dau = rong ? '<option value="">— Không có —</option>' : '<option value="">— Chọn cầu thủ —</option>';
@@ -173,6 +174,10 @@
             (K.nguoi.some(function (n) { return !n.team; }) ? '<optgroup label="Chưa xếp team">' + K.nguoi.filter(function (n) { return !n.team; }).map(function (n) { return '<option value="' + esc(n.ten) + '">' + esc(n.nick) + "</option>"; }).join("") + "</optgroup>" : ""); };
           h += '<hr class="s"><div class="lbl">Tỉ số</div><div class="grid2"><div class="field"><label>' + esc(T[0]) + '</label><input type="number" min="0" id="b1" value="' + (t.kq ? t.kq.b1 : "") + '"></div><div class="field"><label>' + esc(T[1]) + '</label><input type="number" min="0" id="b2" value="' + (t.kq ? t.kq.b2 : "") + '"></div></div>' +
             '<button class="btn" data-luukq="' + t.ma + '">Lưu tỉ số</button>' +
+            '<hr class="s"><div class="lbl">⚖️ Xử thua 0-3</div><div class="muted" style="font-size:12.5px">Khi team dùng cầu thủ bị cấm, hoặc cầu thủ bị hạn chế vào sân trước phút 46.</div>' +
+            '<div class="grid2"><div class="field"><label>Team vi phạm</label><select id="xtBen"><option value="">— Chọn —</option><option value="1">' + esc(T[0]) + '</option><option value="2">' + esc(T[1]) + '</option></select></div>' +
+            '<div class="field"><label>Cầu thủ / ghi chú</label><input id="xtLy" maxlength="150" placeholder="VD: Văn Ngọc vào sân"></div></div>' +
+            '<button class="btn ghost" data-xuthua="' + t.ma + '">⚖️ Xử thua 0-3</button>' +
             '<hr class="s"><div class="lbl">Thêm bàn thắng / thẻ</div><div class="grid2"><div class="field"><label>Loại</label><select id="skLoai"><option value="BAN">⚽ Bàn thắng</option><option value="PHAN_LUOI">⚽ Phản lưới nhà</option><option value="VANG">🟨 Thẻ vàng</option><option value="DO">🟥 Thẻ đỏ</option></select></div>' +
             '<div class="field"><label>Phút (nếu nhớ)</label><input type="number" min="1" max="130" id="skPhut"></div></div>' +
             '<div class="field"><label>Cầu thủ</label><select id="skCt">' + opt() + '</select></div><div class="field" id="ktBox"><label>Kiến tạo</label><select id="skKt">' + opt(null, true) + "</select></div>" +
@@ -190,6 +195,10 @@
     var lo = document.getElementById("skLoai"); if (lo) lo.onchange = function () { document.getElementById("ktBox").hidden = lo.value !== "BAN"; };
     el.querySelectorAll("[data-luukq]").forEach(function (b) { b.onclick = function () {
       run(b, api("luuKetQua", { maTran: b.dataset.luukq, b1: document.getElementById("b1").value, b2: document.getElementById("b2").value }), "Đã lưu tỉ số ✅").then(reload).catch(function () {}); }; });
+    el.querySelectorAll("[data-xuthua]").forEach(function (b) { b.onclick = function () {
+      var ben = document.getElementById("xtBen").value; if (!ben) return toast("Chọn team vi phạm", true);
+      if (!confirm("Xử thua 0-3 cho " + document.getElementById("xtBen").selectedOptions[0].text + "? Tỉ số sẽ thành " + (ben === "1" ? "0 – 3" : "3 – 0") + " và bot báo vào nhóm.")) return;
+      run(b, api("xuThua", { maTran: b.dataset.xuthua, ben: ben, lyDo: document.getElementById("xtLy").value }), "Đã xử thua 0-3").then(reload).catch(function () {}); }; });
     el.querySelectorAll("[data-themsk]").forEach(function (b) { b.onclick = function () {
       var ct = document.getElementById("skCt").value; if (!ct) return toast("Chọn cầu thủ", true);
       run(b, api("themSuKien", { maTran: b.dataset.themsk, loai: lo.value, cauThu: ct, kienTao: lo.value === "BAN" ? document.getElementById("skKt").value : "", phut: document.getElementById("skPhut").value }), "Đã thêm ✅").then(reload).catch(function () {}); }; });
