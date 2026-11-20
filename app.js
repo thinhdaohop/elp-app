@@ -177,26 +177,84 @@
       run(b, api("themSuKien", { maTran: b.dataset.themsk, loai: lo.value, cauThu: ct, kienTao: lo.value === "BAN" ? document.getElementById("skKt").value : "", phut: document.getElementById("skPhut").value }), "Đã thêm ✅").then(reload).catch(function () {}); }; });
     el.querySelectorAll("[data-xsk]").forEach(function (b) { b.onclick = function () { run(b, api("xoaSuKien", { ma: b.dataset.xsk }), "Đã xóa").then(reload).catch(function () {}); }; });
   }
+  var MAU_TEAM = ["#2A6CB0", "#D97A2B"], MAU_KHAC = "#8C938F";
   function veBxh(el) {
     var key = S.bxhMua || "_";
     if (!S.bxh[key]) { choTai(el); api("bxh", { mua: S.bxhMua }).then(function (r) { S.bxh[key] = r; S.bxh[r.mua] = r; if (S.tranTab === "bxh") veBxh(el); }).catch(function (e) { el.innerHTML = '<div class="err">' + esc(e.message) + "</div>"; }); return; }
-    var B = S.bxh[key], h = "";
+    var B = S.bxh[key], T = B.teams || teamTen(), h = "";
+    var mau = function (tm) { var i = T.indexOf(tm); return i === -1 ? MAU_KHAC : MAU_TEAM[i]; };
+    var tk = {}; B.team.forEach(function (t) { tk[t.team] = t; });
+    var A = tk[T[0]], C = tk[T[1]];
     if (B.muaCo.length > 1) h += '<div class="tabs">' + B.muaCo.map(function (m) { return '<button class="tab' + (m.ma === B.mua ? " on" : "") + '" data-mua="' + m.ma + '">' + esc(m.ten) + "</button>"; }).join("") + "</div>";
-    h += '<div class="card"><h2>🏆 Bảng xếp hạng team<span class="r">' + esc(B.tenMua) + " · " + B.soTran + " trận</span></h2>" +
-      '<table class="bxh"><tr><th>#</th><th class="l">Team</th><th>Tr</th><th>T-H-B</th><th>HS</th><th>Đ</th></tr>' + B.team.map(function (t, i) {
-        return "<tr><td>" + (i + 1) + '</td><td class="l"><b>' + esc(t.team) + '</b><div class="form">' + t.form.map(function (f) { return '<i class="f' + f + '">' + f + "</i>"; }).join("") + "</div></td><td>" + t.tr + "</td><td>" + t.th + "-" + t.h + "-" + t.b +
-          "</td><td>" + (t.hs > 0 ? "+" : "") + t.hs + '</td><td><b>' + t.d + "</b></td></tr>";
-      }).join("") + "</table>" + (B.soTran ? '<div class="muted" style="font-size:12.5px;margin-top:8px">Thắng 3 điểm, hòa 1. T = thắng, H = hòa, B = thua.</div>' : '<div class="muted" style="margin-top:8px">Chưa có trận nào tính vào bảng xếp hạng' + (S.d.cauHinh.thuNghiem ? " (giai đoạn thử nghiệm chưa tính)." : ".") + "</div>") + "</div>";
-    h += top("⚽ Vua phá lưới", B.ghiBan, function (x) { return x.so + " bàn"; });
-    h += top("🎯 Kiến tạo", B.kienTao, function (x) { return x.so + " lần"; });
-    h += top("🟨 Thẻ phạt", B.the, function (x) { return (x.vang ? x.vang + " vàng" : "") + (x.vang && x.doo ? " · " : "") + (x.doo ? x.doo + " đỏ" : ""); });
-    h += top("✅ Chuyên cần", B.chuyenCan, function (x) { return x.so + "/" + B.soChot + " trận · " + x.tyLe + "%"; });
+    var legend = '<div class="lg">' + T.map(function (tm) { return '<span><i style="background:' + mau(tm) + '"></i>' + esc(tm) + "</span>"; }).join("") + "</div>";
+
+    // 1. Đối đầu 2 team
+    var hoa = A.h, tong = Math.max(B.soTran, 1);
+    h += '<div class="card duel"><div class="row"><span class="lbl">🏆 ' + esc(B.tenMua) + '</span><span class="sp"></span><span class="muted" style="font-size:13px">' + B.soTran + ' trận</span></div>' +
+      '<div class="dl"><div class="dt"><i style="background:' + mau(T[0]) + '"></i><b>' + esc(T[0]) + '</b></div><div class="dp">' + A.d + '<small>điểm</small></div><div class="dvs">–</div><div class="dp">' + C.d + '<small>điểm</small></div><div class="dt r"><b>' + esc(T[1]) + '</b><i style="background:' + mau(T[1]) + '"></i></div></div>';
+    if (B.soTran) {
+      h += '<div class="split" role="img" aria-label="' + esc(T[0]) + " thắng " + A.th + ", hòa " + hoa + ", " + esc(T[1]) + " thắng " + C.th + '">' +
+        (A.th ? '<i style="flex:' + A.th + ";background:" + mau(T[0]) + '"></i>' : "") + (hoa ? '<i style="flex:' + hoa + ';background:#C9CCC4"></i>' : "") + (C.th ? '<i style="flex:' + C.th + ";background:" + mau(T[1]) + '"></i>' : "") + "</div>" +
+        '<div class="row split-l"><span><b>' + A.th + "</b> thắng</span><span class=\"sp\"></span><span><b>" + hoa + "</b> hòa</span><span class=\"sp\"></span><span><b>" + C.th + "</b> thắng</span></div>";
+      var mx = Math.max(A.bt, C.bt, 1);
+      h += mirror("Bàn thắng", A.bt, C.bt, mx) + mirror("Bàn thua", A.bb, C.bb, Math.max(A.bb, C.bb, 1));
+      h += '<div class="row" style="margin-top:12px"><div class="form">' + A.form.map(function (f) { return '<i class="f' + f + '">' + f + "</i>"; }).join("") + '</div><span class="sp"></span><span class="muted" style="font-size:12px">5 trận gần nhất</span><span class="sp"></span><div class="form">' + C.form.map(function (f) { return '<i class="f' + f + '">' + f + "</i>"; }).join("") + "</div></div>";
+    } else h += '<div class="empty">Chưa có trận nào tính vào bảng xếp hạng' + (S.d.cauHinh.thuNghiem ? " (giai đoạn thử nghiệm chưa tính)" : "") + ".</div>";
+    h += '<details class="tbl"><summary>Xem dạng bảng</summary><table class="bxh"><tr><th>#</th><th class="l">Team</th><th>Tr</th><th>T-H-B</th><th>BT-BB</th><th>Đ</th></tr>' + B.team.map(function (t, i) {
+      return "<tr><td>" + (i + 1) + '</td><td class="l">' + esc(t.team) + "</td><td>" + t.tr + "</td><td>" + t.th + "-" + t.h + "-" + t.b + "</td><td>" + t.bt + "-" + t.bb + "</td><td><b>" + t.d + "</b></td></tr>"; }).join("") + "</table></details></div>";
+
+    // 2. Điểm tích lũy theo vòng
+    if (B.tienTrinh.length >= 2) h += '<div class="card"><h2>📈 Điểm tích lũy theo vòng</h2>' + legend + lineChart(B.tienTrinh) + '<div class="tip" id="tip" hidden></div></div>';
+
+    // 3. Vua phá lưới: bục + thanh
+    h += '<div class="card"><h2>⚽ Vua phá lưới</h2>' + (B.ghiBan.length ? legend + podium(B.ghiBan, "bàn") + hbars(B.ghiBan.slice(3), function (x) { return x.so + " bàn"; }, null, B.ghiBan[0].so) : '<div class="empty">Chưa có bàn thắng nào</div>') + "</div>";
+    h += '<div class="card"><h2>🎯 Kiến tạo</h2>' + (B.kienTao.length ? hbars(B.kienTao, function (x) { return x.so + " lần"; }) : '<div class="empty">Chưa có kiến tạo nào</div>') + "</div>";
+    h += '<div class="card"><h2>🟨 Thẻ phạt</h2>' + (B.the.length ? '<ul class="list">' + B.the.map(function (x) {
+      return '<li><span class="dot" style="background:' + mau(x.team) + '"></span><div class="who"><b>' + esc(x.nick) + "</b></div>" + '<span class="cards">' + new Array(x.vang + 1).join('<i class="cy" aria-hidden="true"></i>') + new Array(x.doo + 1).join('<i class="cr" aria-hidden="true"></i>') + "</span>" +
+        '<span class="muted" style="font-size:13px;min-width:62px;text-align:right">' + [x.vang ? x.vang + " vàng" : "", x.doo ? x.doo + " đỏ" : ""].filter(String).join(" · ") + "</span></li>"; }).join("") + "</ul>" : '<div class="empty">Chưa có thẻ nào, fair-play! 👏</div>') + "</div>";
+    h += '<div class="card"><h2>✅ Chuyên cần<span class="r">' + B.soChot + " trận đã chốt</span></h2>" + (B.chuyenCan.length ? hbars(B.chuyenCan, function (x) { return x.tyLe + "%"; }, function () { return "#3E7A62"; }, 100, function (x) { return x.tyLe; }) : '<div class="empty">Chưa có trận nào chốt điểm danh</div>') + "</div>";
     el.innerHTML = h;
     el.querySelectorAll("[data-mua]").forEach(function (b) { b.onclick = function () { S.bxhMua = b.dataset.mua; veBxh(el); }; });
-    function top(ten, ds, fmt) {
-      return '<div class="card"><h2>' + ten + "</h2>" + (ds.length ? '<ul class="list">' + ds.map(function (x, i) {
-        return '<li><div class="av' + (i === 0 ? " ok" : "") + '">' + (i + 1) + '</div><div class="who"><b>' + esc(x.nick) + '</b></div><b style="color:#0B3D2E">' + esc(fmt(x)) + "</b></li>";
-      }).join("") + "</ul>" : '<div class="empty">Chưa có số liệu</div>') + "</div>";
+    var svgEl = el.querySelector("svg.lc"), tip = document.getElementById("tip");
+    if (svgEl) svgEl.querySelectorAll("[data-v]").forEach(function (r) {
+      var show = function () { var x = B.tienTrinh[+r.dataset.v]; tip.hidden = false; tip.innerHTML = "<b>Vòng " + (+r.dataset.v + 1) + " · " + esc(x.ngay) + "</b> · tỉ số " + x.b1 + "–" + x.b2 + "<br>" + esc(T[0]) + ": " + x.d1 + " điểm · " + esc(T[1]) + ": " + x.d2 + " điểm";
+        svgEl.querySelectorAll(".cx").forEach(function (c) { c.setAttribute("opacity", c.dataset.i === r.dataset.v ? 1 : 0); }); };
+      r.addEventListener("mouseenter", show); r.addEventListener("click", show);
+    });
+
+    function mirror(ten, a, c, m) {
+      return '<div class="mir"><span class="mv">' + a + '</span><div class="mb l"><i style="width:' + Math.round(a / m * 100) + "%;background:" + mau(T[0]) + '"></i></div><span class="mt">' + ten + '</span><div class="mb"><i style="width:' + Math.round(c / m * 100) + "%;background:" + mau(T[1]) + '"></i></div><span class="mv">' + c + "</span></div>";
+    }
+    function podium(ds, dv) {
+      var ord = [ds[1], ds[0], ds[2]], cls = ["p2", "p1", "p3"], md = ["🥈", "🥇", "🥉"];
+      return '<div class="podium">' + ord.map(function (x, i) {
+        if (!x) return '<div class="pd ' + cls[i] + ' e"></div>';
+        return '<div class="pd ' + cls[i] + '"><div class="pav" style="box-shadow:0 0 0 3px ' + mau(x.team) + '">' + esc(viet(x.nick)) + '</div><div class="pn">' + esc(x.nick) + '</div><div class="pb"><span class="pm">' + md[i] + "</span><b>" + x.so + "</b><small>" + dv + "</small></div></div>";
+      }).join("") + "</div>";
+    }
+    function hbars(ds, nhan, mauFn, max, valFn) {
+      if (!ds.length) return "";
+      valFn = valFn || function (x) { return x.so; };
+      var m = max || Math.max.apply(null, ds.map(valFn).concat([1]));
+      return '<div class="hb">' + ds.map(function (x) {
+        return '<div class="hbr"><span class="hn">' + esc(x.nick) + '</span><div class="ht"><i style="width:' + Math.max(3, Math.round(valFn(x) / m * 100)) + "%;background:" + (mauFn ? mauFn(x) : mau(x.team)) + '"></i></div><span class="hv">' + esc(nhan(x)) + "</span></div>";
+      }).join("") + "</div>";
+    }
+    function lineChart(tt) {
+      var W = 320, H = 170, L = 26, R = 12, Tp = 14, Bt = 26, n = tt.length;
+      var my = Math.max.apply(null, tt.map(function (x) { return Math.max(x.d1, x.d2); }).concat([3]));
+      var X = function (i) { return L + (n === 1 ? 0 : i * (W - L - R) / (n - 1)); }, Y = function (v) { return Tp + (H - Tp - Bt) * (1 - v / my); };
+      var g = "", step = Math.max(1, Math.ceil(my / 4));
+      for (var v = 0; v <= my; v += step) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="#E2DED0" stroke-width="1"/><text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end" class="ax">' + v + "</text>";
+      tt.forEach(function (x, i) { if (n <= 8 || i % Math.ceil(n / 8) === 0 || i === n - 1) g += '<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle" class="ax">V' + (i + 1) + "</text>"; });
+      var line = function (k, c) {
+        var pts = tt.map(function (x, i) { return X(i) + "," + Y(x[k]); }).join(" ");
+        return '<polyline points="' + pts + '" fill="none" stroke="' + c + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+          tt.map(function (x, i) { return '<circle cx="' + X(i) + '" cy="' + Y(x[k]) + '" r="4" fill="' + c + '" stroke="#FFFFFA" stroke-width="2"/>'; }).join("");
+      };
+      var cross = tt.map(function (x, i) { return '<line class="cx" data-i="' + i + '" x1="' + X(i) + '" x2="' + X(i) + '" y1="' + Tp + '" y2="' + (H - Bt) + '" stroke="#5A625E" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>'; }).join("");
+      var hit = tt.map(function (x, i) { var w = (W - L - R) / Math.max(n - 1, 1); return '<rect data-v="' + i + '" x="' + (X(i) - w / 2) + '" y="0" width="' + w + '" height="' + H + '" fill="transparent"/>'; }).join("");
+      return '<svg class="lc" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Điểm tích lũy hai team qua ' + n + ' vòng">' + g + cross + line("d2", mau(T[1])) + line("d1", mau(T[0])) + hit + "</svg>";
     }
   }
 
