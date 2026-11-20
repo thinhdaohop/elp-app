@@ -18,9 +18,33 @@
     var t = document.getElementById("toast"); t.textContent = msg; t.className = "on" + (bad ? " bad" : "");
     clearTimeout(toast._t); toast._t = setTimeout(function () { t.className = ""; }, 3200);
   }
+  // Mã điện thoại: tạo 1 lần, giữ cả khi đăng xuất (khóa 1 tài khoản ↔ 1 điện thoại)
+  function maMay() {
+    var d = store("elp_dev");
+    if (!d) { var m = document.cookie.match(/(?:^|; )elp_dev=([A-Za-z0-9-]+)/); d = m ? m[1] : ""; }
+    if (!d) {
+      try { d = crypto.randomUUID(); } catch (e) { d = ""; }
+      if (!d) { d = ""; for (var i = 0; i < 32; i++) d += Math.floor(Math.random() * 16).toString(16); }
+    }
+    store("elp_dev", d);
+    try { document.cookie = "elp_dev=" + d + "; max-age=315360000; path=/; SameSite=Lax"; } catch (e) {}
+    return d;
+  }
+  function vanTay() {
+    var n = navigator, sc = window.screen || {}, tz = "";
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}
+    var x = [n.userAgent, n.language, n.platform, n.hardwareConcurrency, n.maxTouchPoints, n.deviceMemory,
+      Math.min(sc.width, sc.height) + "x" + Math.max(sc.width, sc.height), sc.colorDepth, window.devicePixelRatio, tz].join("|");
+    var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (var i = 0; i < x.length; i++) { var c = x.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h2 >>> 0).toString(16) + (h1 >>> 0).toString(16);
+  }
+  var DEV = maMay(), FP = vanTay();
   function api(name, data) {
     if (!CFG.API) return Promise.reject(new Error("App chưa được cấu hình đường dẫn API (config.js)."));
-    var body = Object.assign({ api: name, ten: S.ten, token: S.token }, data || {});
+    var body = Object.assign({ api: name, ten: S.ten, token: S.token, dev: DEV, fp: FP }, data || {});
     return fetch(CFG.API, { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" })
       .then(function (r) { return r.json(); })
       .then(function (j) {
@@ -82,7 +106,8 @@
       '<input class="pin" id="pin" type="tel" inputmode="numeric" maxlength="4" autocomplete="one-time-code"></div>' +
       (moi ? '<div class="field"><label style="color:#BFD8CC">Nhập lại mã PIN</label><input class="pin" id="pin2" type="tel" inputmode="numeric" maxlength="4"></div>' : "") +
       '<button class="btn" id="go">' + (moi ? "Tạo PIN và vào app" : "Vào app") + '</button><button class="link" id="back">‹ Chọn tên khác</button>' +
-      (moi ? "" : '<div class="muted" style="margin-top:10px;font-size:13px">Quên PIN? Nhờ Thủ quỹ hoặc Phụ trách Đội đặt lại.</div>') + "</div>";
+      (moi ? "" : '<div class="muted" style="margin-top:10px;font-size:13px">Quên PIN? Nhờ Thủ quỹ hoặc Phụ trách Đội đặt lại.</div>') +
+      '<div class="muted" style="margin-top:8px;font-size:12.5px">🔒 Mỗi tài khoản chỉ dùng trên 1 điện thoại, mỗi điện thoại 1 tài khoản. Đổi máy thì nhờ Admin gỡ máy cũ.</div></div>';
     var pin = document.getElementById("pin"); pin.focus();
     document.getElementById("back").onclick = moLogin;
     function go() {
@@ -819,9 +844,10 @@
       '<div class="grid2">' + inp("Nghỉ từ", "date") + inp("Nghỉ đến", "date") + "</div>" +
       '<div class="grid2">' + inp("Ngày vào", "date") + inp("Ngày rời", "date") + "</div>" + inp("Ghi chú") +
       '<label class="row muted" style="margin-top:10px"><input type="checkbox" id="resetPin"> Đặt lại PIN (' + (m.coPin ? "đã có PIN" : "chưa tạo PIN") + ")</label>" +
+      '<label class="row muted"><input type="checkbox" id="goTb"' + (m.coTb ? "" : " disabled") + '> Gỡ điện thoại đã gắn (' + (m.coTb ? "đã gắn 1 máy" : "chưa gắn máy") + ")</label>" +
       '<button class="btn" id="luuTv">Lưu thành viên</button>';
     document.getElementById("luuTv").onclick = function () {
-      var o = { ten2: m.ten, datLaiPin: document.getElementById("resetPin").checked };
+      var o = { ten2: m.ten, datLaiPin: document.getElementById("resetPin").checked, goThietBi: document.getElementById("goTb").checked };
       box.querySelectorAll("[data-f]").forEach(function (e) { if (e.dataset.f === "Trạng thái") o.trangThai = e.value; else o[e.dataset.f] = e.value; });
       run(this, api("suaThanhVien", o), "Đã lưu " + m.nick).then(function (r) { var i = S.tv.indexOf(m); S.tv[i] = r; veTvForm(r); }).catch(function () {});
     };
