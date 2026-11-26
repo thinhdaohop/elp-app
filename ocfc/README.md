@@ -10,4 +10,6 @@ Khác bản ELP:
 
 Dữ liệu và xử lý: Google Apps Script "CODE APPS SCRIPT - QUY OCFC 2026 v1" gắn với file "QUỸ OCEAN CITY FC 2026". Danh sách thành viên đọc từ tab 2026 của file quỹ.
 
+Link app: https://thinhdaohop.github.io/oceancity/ (repo `oceancity`, chép toàn bộ thư mục này vào gốc repo, bật GitHub Pages nhánh main).
+
 Cài đặt: deploy Apps Script thành Ứng dụng web, dán URL `/exec` vào mục `API` trong `config.js`.
