@@ -62,7 +62,7 @@ main { padding: 14px 14px calc(var(--nav) + 24px + env(safe-area-inset-bottom));
 .vbtn small { display: block; font-weight: 400; color: var(--mute); font-size: 13px; }
 .vbtn:disabled { opacity: .55; }
 
-input[type=text], input[type=tel], input[type=number], input[type=date], input[type=search], select, textarea {
+input:not([type]), input[type=text], input[type=datetime-local], input[type=tel], input[type=number], input[type=date], input[type=search], select, textarea {
   width: 100%; background: #fff; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 12px; font-size: 16px; outline: none; }
 input:focus, select:focus, textarea:focus { border-color: var(--mid); }
 textarea { min-height: 70px; resize: vertical; }

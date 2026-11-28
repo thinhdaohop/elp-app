@@ -540,20 +540,71 @@
   function veSoQuy(el) {
     var m = S.sqM || (S.d.vi ? S.d.vi.m : 0) || new Date().getMonth() + 1;
     if (!S.sq[m]) { choTai(el); api("soQuy", { m: m }).then(function (r) { S.sq[r.m || m] = r; S.sq[m] = r; S.sqM = r.m || m; veSoQuy(el); }).catch(function (e) { el.innerHTML = '<div class="err">' + esc(e.message) + "</div>"; }); return; }
-    var q = S.sq[m];
-    if (!q.thu && !q.thuRows) { el.innerHTML = '<div class="card empty">Chưa có sổ quỹ.</div>'; return; }
-    var h = '<div class="tabs">' + q.thangCo.map(function (k) { return '<button class="tab' + (k === q.m ? " on" : "") + '" data-m="' + k + '">T' + k + "</button>"; }).join("") + "</div>" +
+    var q = S.sq[m], laTq = S.d && S.d.me && S.d.me.admin;
+    if (!q.thu && !q.thuRows) { el.innerHTML = (laTq ? formGd() : "") + '<div class="card empty">Chưa có sổ quỹ.</div>'; ganGd(el); return; }
+    var h = (laTq ? formGd() : "") + '<div class="tabs">' + q.thangCo.map(function (k) { return '<button class="tab' + (k === q.m ? " on" : "") + '" data-m="' + k + '">T' + k + "</button>"; }).join("") + "</div>" +
       '<div class="kpis"><div><span>Tồn đầu T' + q.m + "</span><b>" + tr(q.ton) + '</b></div><div><span>Thu</span><b class="pos">+' + tr(q.thu) + '</b></div><div><span>Chi</span><b class="neg">−' + tr(q.chi) + '</b></div></div>' +
       '<div class="hero" style="padding:14px 18px"><div class="lbl" style="color:#C5A059">SỐ DƯ CUỐI T' + q.m + '</div><div class="when">' + vnd(q.du) + "</div></div>" +
       bang("Thu", q.thuRows, q.thu, "pos") + bang("Chi", q.chiRows, q.chi, "neg") +
       '<div class="muted" style="text-align:center;font-size:12.5px">Số liệu lấy trực tiếp từ tab T' + q.m + "-THU CHI, bot cập nhật khi tiền vào ra.</div>";
     el.innerHTML = h;
     el.querySelectorAll("[data-m]").forEach(function (b) { b.onclick = function () { S.sqM = +b.dataset.m; veSoQuy(el); }; });
+    ganGd(el);
     function bang(ten, rows, tong, cls) {
       return '<div class="card"><h2>' + ten + '<span class="r">' + vnd(tong) + '</span></h2><ul class="list">' + rows.map(function (r) {
         return '<li><div class="who"><b style="white-space:normal">' + esc(r.lab) + "</b>" + (r.dg || r.sl ? "<span>" + esc([r.sl && r.gia ? r.sl + " × " + vnd(r.gia) : "", r.dg].filter(String).join(" · ")) + "</span>" : "") + '</div><b class="' + cls + '">' + vnd(r.tien) + "</b></li>";
       }).join("") + "</ul>" + (rows.length ? "" : '<div class="empty">Chưa có khoản nào</div>') + "</div>";
     }
+  }
+  // ---------- Thủ quỹ: nhập giao dịch (thay MacroDroid) & tài khoản quỹ ----------
+  function formGd() {
+    var bay = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    return '<div class="card"><h2>➕ Nhập giao dịch<span class="r muted" style="font-size:12px">Thủ quỹ</span></h2>' +
+      '<div class="muted" style="font-size:12.5px;margin-bottom:8px">Mỗi lần tài khoản quỹ có tiền vào/ra, nhập 1 lần. Bot tự ghi sổ và báo nhóm Zalo như cũ.</div>' +
+      '<div class="tabs seg"><button class="tab on" data-chieu="in">💰 Tiền vào</button><button class="tab" data-chieu="out">💸 Tiền ra</button></div>' +
+      '<div class="field"><label>Số tiền (đồng)</label><input id="gdTien" inputmode="numeric" placeholder="VD: 500000"></div>' +
+      '<div class="field"><label>Nội dung chuyển khoản (copy y nguyên từ app ngân hàng)</label><input id="gdNd" placeholder="VD: NGUYEN VAN A NOP QUY T12"></div>' +
+      '<div class="field"><label>Số dư sau giao dịch (nên nhập để đối soát)</label><input id="gdSd" inputmode="numeric" placeholder="VD: 42587997"></div>' +
+      '<div class="field"><label>Thời gian giao dịch</label><input type="datetime-local" id="gdGio" value="' + bay + '"></div>' +
+      '<details style="margin:6px 0 10px"><summary class="muted" style="font-size:13px">Hoặc dán nguyên tin báo của ngân hàng</summary>' +
+      '<div class="field"><textarea id="gdTin" rows="4" placeholder="Dán tin biến động số dư (có số tiền …VND, số dư, nội dung)"></textarea></div></details>' +
+      '<button class="btn gold" id="gdLuu">Ghi sổ & báo nhóm</button><div id="gdKq"></div>' +
+      '<details style="margin-top:12px"><summary class="muted" style="font-size:13px">🏦 Tài khoản quỹ đang dùng</summary><div id="tkBox" class="muted" style="font-size:13px;padding-top:8px">Đang tải…</div></details></div>';
+  }
+  function ganGd(el) {
+    var btn = document.getElementById("gdLuu"); if (!btn) return;
+    var chieu = "in";
+    el.querySelectorAll("[data-chieu]").forEach(function (b) { b.onclick = function () {
+      chieu = b.dataset.chieu; el.querySelectorAll("[data-chieu]").forEach(function (x) { x.classList.toggle("on", x === b); }); }; });
+    var o = function (id) { return document.getElementById(id); };
+    btn.onclick = function () {
+      var d = { chieu: chieu, soTien: o("gdTien").value, gio: o("gdGio").value, noiDung: o("gdNd").value, soDu: o("gdSd").value, tinNH: o("gdTin").value };
+      if (!d.tinNH && !(+String(d.soTien).replace(/\D/g, ""))) return toast("Nhập số tiền", true);
+      if (!d.tinNH && !d.noiDung.trim()) return toast("Nhập nội dung chuyển khoản", true);
+      if (!d.tinNH && !confirm((chieu === "in" ? "Tiền VÀO " : "Tiền RA ") + vnd(+String(d.soTien).replace(/\D/g, "")) + "\n" + d.noiDung + "\n\nGhi sổ và báo nhóm Zalo?")) return;
+      run(btn, api("nhapGiaoDich", d)).then(function (r) {
+        o("gdKq").innerHTML = '<div class="banner ' + (r.ok ? "ok" : "warn") + '" style="margin:10px 0 0"><b>' + (r.ok ? "✅ Đã ghi sổ & báo nhóm" : "⚠️ Đã báo nhóm, cần Thủ quỹ kiểm tra") + "</b>" +
+          esc((r.nguoi.length ? "Người: " + r.nguoi.join(", ") + " · " : "") + r.lines.join(" · ")) + (r.lech ? "<br>Sổ đang lệch số dư ngân hàng " + vnd(Math.abs(r.lech.diff)) : "") + "</div>";
+        ["gdTien", "gdNd", "gdSd", "gdTin"].forEach(function (id) { o(id).value = ""; });
+        S.sq = {}; S.dash = null;
+      }).catch(function () {});
+    };
+    var tkBox = o("tkBox");
+    var veTk = function (t) {
+      tkBox.innerHTML = "<div><b>" + esc(t.nganHang) + " · " + esc(t.stk) + "</b> · " + esc(t.chuTk) + "</div>" +
+        (t.soDu != null ? "<div>Số dư đối soát gần nhất: " + vnd(t.soDu) + " (" + esc(t.soDuLuc) + ")</div>" : "<div>Chưa có số dư đối soát.</div>") +
+        '<div class="muted" style="margin-top:8px">Đổi tài khoản (mã QR trong Ví của ae sẽ đổi theo):</div>' +
+        '<div class="grid2"><div class="field"><label>Ngân hàng (mã)</label><input id="tkNh" value="' + esc(t.nganHang) + '" placeholder="SHB"></div>' +
+        '<div class="field"><label>Số tài khoản</label><input id="tkStk" inputmode="numeric" value="' + esc(t.stk) + '"></div></div>' +
+        '<div class="field"><label>Chủ tài khoản (không dấu)</label><input id="tkChu" value="' + esc(t.chuTk) + '"></div>' +
+        '<div class="field"><label>Số dư hiện tại của tài khoản mới</label><input id="tkSd" inputmode="numeric" placeholder="VD: 42587997"></div>' +
+        '<button class="btn ghost" id="tkLuu">Lưu tài khoản quỹ</button>';
+      o("tkLuu").onclick = function () {
+        if (!confirm("Đổi tài khoản quỹ sang " + o("tkNh").value + " " + o("tkStk").value + "?")) return;
+        run(this, api("taiKhoanQuy", { luu: 1, nganHang: o("tkNh").value, stk: o("tkStk").value, chuTk: o("tkChu").value, soDu: o("tkSd").value }), "Đã đổi tài khoản quỹ").then(veTk).catch(function () {});
+      };
+    };
+    tkBox.parentNode.addEventListener("toggle", function () { if (tkBox.parentNode.open && !tkBox.dataset.ok) { tkBox.dataset.ok = 1; api("taiKhoanQuy").then(veTk).catch(function (e) { tkBox.textContent = e.message; }); } });
   }
   function tr(n) { n = n || 0; return Math.abs(n) >= 1e6 ? (Math.round(n / 1e5) / 10).toString().replace(".", ",") + "tr" : Math.abs(n) >= 1000 ? Math.round(n / 1000) + "k" : vnd(n); }
 
